@@ -1,6 +1,7 @@
 name: Python Package using Conda
 
-on: [push]
+on:
+  push:
 
 jobs:
   build-linux:
@@ -9,26 +10,35 @@ jobs:
       max-parallel: 5
 
     steps:
+    # Step 1: Checkout the code
     - uses: actions/checkout@v3
+
+    # Step 2: Set up Python 3.10
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
         python-version: '3.10'
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install dependencies
-      run: |
-        conda env update --file environment.yml --name base
+
+    # Step 3: Install Miniconda and add it to the system PATH
+    - name: Set up Conda
+      uses: goanpeca/setup-miniconda@v1
+      with:
+        python-version: 3.10
+        auto-update-conda: true
+        environment-file: environment.yml  # Automatically installs dependencies from the environment file
+        activate-environment: base
+
+    # Step 4: Lint the code with flake8
     - name: Lint with flake8
       run: |
-        conda install flake8
-        # stop the build if there are Python syntax errors or undefined names
+        conda install -c conda-forge flake8 -y
+        # Stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        # Exit-zero treats all errors as warnings
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    # Step 5: Run tests with pytest
     - name: Test with pytest
       run: |
-        conda install pytest
+        conda install -c conda-forge pytest -y
         pytest
